@@ -42,12 +42,12 @@ while read line; do
     
     # create input tsv for ggsashimi
     echo "$KF_id"$'\t'"$bam_path"$'\t'"$prefix" >> "$input_path"
-    
-    # run ggsashimi
-    python3 ggsashimi.py -b "$input_path" -c "$coordinates" --shrink \
-        -g ../data/gencode.v39.primary_assembly.annotation.protein_coding.gtf \
-        -P input/palette.txt -C 3 -O 3 -A median_j -M 3 \
-        -o "plots/${gene}-${KF_id}-${coordinates}"
-        
   done
+  
+  # run ggsashimi
+  python3 ggsashimi.py -b "$input_path" -c "$coordinates" --shrink \
+      -g ../data/gencode.v39.primary_assembly.annotation.protein_coding.gtf \
+      -P input/palette.txt -C 3 -O 3 -A median_j -M 3 \
+      -o "plots/${gene}-${KF_id}-${coordinates}"
+      
 done < <(tail -n +2 $variants)
