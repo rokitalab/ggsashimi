@@ -18,7 +18,8 @@ while read line; do
     
   ## get file id
   crams=$(grep "$KF_id" input/manifest.tsv | grep "Aligned.out.sorted.cram" | grep -v "crai" | cut -f2)
-    
+  input_path="results/${KF_id}-${gene}-${coordinates}.tsv"
+  
   ## loop through each CRAM per patient
   ## TODO: Make select from BS_ID an option?
   for cram in $crams; do
@@ -29,8 +30,7 @@ while read line; do
     
     echo "Converting $cram_path"
     bam_path="results/bams/${prefix}-${KF_id}-${gene}-${coordinates}.bam"
-    # input_path="variants/${prefix}-${KF_id}-${gene}-${coordinates}.tsv"
-      
+    
     samtools view \
       -T ../data/hg38.fa \
       -b \
@@ -40,5 +40,14 @@ while read line; do
     
     samtools index "$bam_path"
     
+    # create input tsv for ggsashimi
+    echo "$KF_id"$'\t'"$bam_path"$'\t'"$prefix" >> "$input_path"
+    
+    # run ggsashimi
+    python3 ggsashimi.py -b "$input_path" -c "$coordinates" --shrink \
+        -g ../data/gencode.v39.primary_assembly.annotation.protein_coding.gtf \
+        -P input/palette.txt -C 3 -O 3 -A median_j -M 3 \
+        -o "plots/${gene}-${KF_id}-${coordinates}"
+        
   done
 done < <(tail -n +2 $variants)
