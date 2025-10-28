@@ -44,6 +44,36 @@ while read line; do
     echo "$KF_id"$'\t'"$bam_path"$'\t'"$prefix" >> "$input_path"
   done
   
+  ## Prepare controls
+  ## TODO: Auto-select controls, or select based on histologies
+  controls=("SRR26129063" "SRR26129064" "SRR26129066")
+  control_manifest="cavatica/projects/sicklera/pbta-and-normal-crams/manifest_20250825_143150.tsv"
+
+  control_crams=$(grep -E "$(printf '%s|' "${controls[@]}" | sed 's/|$//')" "$control_manifest" | grep -v "crai" | cut -f2)
+  ## loop through each CRAM
+  for cram in $control_crams; do
+    cram_path="cavatica/projects/sicklera/pbta-and-normal-crams/$cram"
+
+    prefix=$(basename "$cram" .Aligned.out.sorted.cram)
+    ID=$(grep "$prefix" "$control_manifest" | cut -f5 | sort -u)
+    
+    echo "Processing control $cram_path"
+    bam_path="results/bams/${prefix}-${KF_id}-${gene}-${coordinates}.bam"
+
+    samtools view \
+      -T ../data/hg38.fa \
+      -b \
+      "$cram_path" \
+      "$coordinates" \
+      -o "$bam_path"
+    
+    samtools index "variants/${bam_path}"
+    
+    # write control path to input tsv for ggsashimi
+    # Column 3 being "control" collapses all controls to one plot
+    echo "$ID"$'\t'"$bam_path"$'\t'"Control" >> "$input_path"
+  done
+  
   # run ggsashimi
   python3 ggsashimi.py -b "$input_path" -c "$coordinates" --shrink \
       -g ../data/gencode.v39.primary_assembly.annotation.protein_coding.gtf \
