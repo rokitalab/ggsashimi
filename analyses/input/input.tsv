@@ -1,0 +1,3 @@
+Kids_First_Participant_ID	cohort_participant_id	chr	start	end	ref	alt	distance	source	Consequence	Hugo_Symbol	plot_group	broad_histology
+PT_JYZA0PNV	C95571	chr11	108315911	108315911	G	A	0	germline	missense_variant&splice_region_variant	ATM	Low-grade glioma	Low-grade astrocytic tumor
+PT_BQFM8NH0	C2722113	chr11	44171609	44171609	A	G	-2	germline	splice_acceptor_variant	EXT2	Non-neoplastic tumor	Benign tumor
