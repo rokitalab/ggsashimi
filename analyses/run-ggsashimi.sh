@@ -1,25 +1,73 @@
 #!/bin/bash
 
-## Set up input file
-variants="input/input.tsv"
-window=10000
+## Define default variables
+kf_id_col=1   # KF patient ID column
+chr_col=3     # Chromosome
+pos_col=4     # Position
+label_col=11  # Additional label to add to plot for identification, i.e. gene
+window=10000  # Bases to plot either side of the position given
 
-while read line; do
-  KF_id=$(echo "$line" | cut -f 1)
-  chr=$(echo "$line" | cut -f 3)
-  coord_pos=$(echo "$line" | cut -f 4)
-  gene=$(echo "$line" | cut -f 11)
+## Set up input files
+while getopts i:m:k:c:p:l: opt; do
+  case "${opt}" in
+    i) input_file=${OPTARG};; # header is expected
+    m) manifest=${OPTARG};;
+    k) kf_id_col=${OPTARG};;
+    c) chr_col=${OPTARG};;
+    p) pos_col=${OPTARG};;
+    l) label_col=${OPTARG};;
+    w) window=${OPTARG};;
+  esac
+done
+
+if [[ -z "$input_file" ]]; then
+  echo "Error: Input file (-i) is required."
+fi
+
+if [[ -z "$manifest" ]]; then
+  echo "Error: Manifest (-m) is required."
+fi
+
+## Download genome reference
+URL="https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz"
+ref_genome="../data/hg38.fa"
+
+if [ -f "$ref_genome" ]; then
+  echo "Using reference genome: $ref_genome"
+else
+  echo "Downloading reference genome..."
+  curl -L -o "$ref_genome.gz" "$URL"
   
-  prefix="$KF_id-$gene-$chr-$coord_pos"
+  # Verify download succeeded
+  if [ $? -eq 0 ]; then
+    gunzip $ref_genome.gz
+    samtools faidx $ref_genome
+    echo "Download complete: $ref_genome"
+  else
+    echo "Download failed."
+    exit 1
+  fi
+fi
+
+####################################################
+
+# Loop through variant file
+while read line; do
+  KF_id=$(echo "$line" | cut -f $kf_id_col)
+  chr=$(echo "$line" | cut -f $chr_col)
+  coord_pos=$(echo "$line" | cut -f $pos_col)
+  label=$(echo "$line" | cut -f $label_col)
+  
+  prefix="$KF_id-$label-$chr-$coord_pos"
   echo "Processing $prefix"
   
   ## TODO: Get window from splice event
   coordinates=$chr":"$(($coord_pos - $window))"-"$(($coord_pos + $window))
     
   ## get file id
-  crams=$(grep "$KF_id" input/manifest.tsv | grep "Aligned.out.sorted.cram" | grep -v "crai" | cut -f2)
-  input_path="results/${KF_id}-${gene}-${coordinates}.tsv"
-  
+  crams=$(grep "$KF_id" $manifest | grep "Aligned.out.sorted.cram" | grep -v "crai" | cut -f2)
+  input_path="results/${KF_id}-${label}-${coordinates}.tsv"
+
   ## loop through each CRAM per patient
   ## TODO: Make select from BS_ID an option?
   for cram in $crams; do
@@ -29,10 +77,10 @@ while read line; do
     prefix=$(basename "$cram" .Aligned.out.sorted.cram)
     
     echo "Converting $cram_path"
-    bam_path="results/bams/${prefix}-${KF_id}-${gene}-${coordinates}.bam"
-    
+    bam_path="results/bams/${prefix}-${KF_id}-${label}-${coordinates}.bam"
+
     samtools view \
-      -T ../data/hg38.fa \
+      -T $ref_genome \
       -b \
       "$cram_path" \
       "$coordinates" \
@@ -43,11 +91,11 @@ while read line; do
     # create input tsv for ggsashimi
     echo "$KF_id"$'\t'"$bam_path"$'\t'"$prefix" >> "$input_path"
   done
-  
+
   # run ggsashimi
   python3 ggsashimi.py -b "$input_path" -c "$coordinates" --shrink \
       -g ../data/gencode.v39.primary_assembly.annotation.protein_coding.gtf \
       -P input/palette.txt -C 3 -O 3 -A median_j -M 3 \
-      -o "plots/${gene}-${KF_id}-${coordinates}"
+      -o "plots/${label}-${KF_id}-${coordinates}"
       
 done < <(tail -n +2 $variants)
