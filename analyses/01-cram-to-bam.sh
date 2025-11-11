@@ -28,6 +28,25 @@ if [[ -z "$manifest" ]]; then
   echo "Error: Manifest (-m) is required."
 fi
 
+## Download genome reference
+URL="https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz"
+ref_genome="../data/hg38.fa.gz"
+
+if [ -f "$ref_genome" ]; then
+  echo "Using reference genome: $ref_genome"
+else
+  echo "Downloading reference genome..."
+  curl -L -o "$FILE" "$URL"
+  
+  # Verify download succeeded
+  if [ $? -eq 0 ]; then
+    echo "Download complete: $FILE"
+  else
+    echo "Download failed."
+    exit 1
+  fi
+fi
+
 ####################################################
 
 # Loop through variant file
@@ -59,7 +78,7 @@ while read line; do
     # input_path="variants/${prefix}-${KF_id}-${gene}-${coordinates}.tsv"
       
     samtools view \
-      -T ../data/hg38.fa \
+      -T $ref_genome \
       -b \
       "$cram_path" \
       "$coordinates" \
