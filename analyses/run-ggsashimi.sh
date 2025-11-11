@@ -5,7 +5,7 @@ kf_id_col=1   # KF patient ID column
 chr_col=3     # Chromosome
 pos_col=4     # Position
 label_col=11  # Additional label to add to plot for identification, i.e. gene
-window=10000  # Bases to plot either side of the position given
+window=1000  # Bases to plot either side of the position given
 
 ## Set up input files
 while getopts i:m:k:c:p:l: opt; do
@@ -49,6 +49,26 @@ else
   fi
 fi
 
+## Download GENCODE v39 annotations
+URL="https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_39/gencode.v39.annotation.gtf.gz"
+gencode="../data/gencode.v39.annotation.gtf"
+
+if [ -f "$gencode" ]; then
+  echo "Using gencode: $gencode"
+else
+  echo "Downloading gencode..."
+  curl -L -o "$gencode.gz" "$URL"
+  
+  # Verify download succeeded
+  if [ $? -eq 0 ]; then
+    gunzip $gencode.gz
+    echo "Download complete: $gencode"
+  else
+    echo "Download failed."
+    exit 1
+  fi
+fi
+
 ####################################################
 
 # Loop through variant file
@@ -66,7 +86,8 @@ while read line; do
     
   ## get file id
   crams=$(grep "$KF_id" $manifest | grep "Aligned.out.sorted.cram" | grep -v "crai" | cut -f2)
-    
+  input_path="results/${KF_id}-${label}-${coordinates}.tsv"
+
   ## loop through each CRAM per patient
   ## TODO: Make select from BS_ID an option?
   for cram in $crams; do
@@ -76,17 +97,25 @@ while read line; do
     prefix=$(basename "$cram" .Aligned.out.sorted.cram)
     
     echo "Converting $cram_path"
-    bam_path="results/bams/${prefix}-${KF_id}-${label}-${coordinates}.bam"
-    # input_path="variants/${prefix}-${KF_id}-${label}-${coordinates}.tsv"
-      
+    bam_path="bams/${prefix}-${KF_id}-${label}-${coordinates}.bam"
+
     samtools view \
       -T $ref_genome \
       -b \
       "$cram_path" \
       "$coordinates" \
-      -o "$bam_path"
+      -o "results/$bam_path"
     
-    samtools index "$bam_path"
+    samtools index "results/$bam_path"
     
+    # create input tsv for ggsashimi
+    echo "$KF_id"$'\t'"$bam_path"$'\t'"$prefix" >> "$input_path"
   done
+
+  # run ggsashimi
+  python3 ../ggsashimi.py -b "$input_path" -c "$coordinates" --shrink \
+      -g $gencode -P input/palette.txt \
+      -C 1 -O 1 -A median_j -M 3 \
+      -o "plots/${label}-${KF_id}-${coordinates}"
+      
 done < <(tail -n +2 $input_file)
