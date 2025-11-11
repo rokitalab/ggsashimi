@@ -1,3 +1,5 @@
 Kids_First_Participant_ID	cohort_participant_id	chr	start	end	ref	alt	distance	source	Consequence	Hugo_Symbol	plot_group	broad_histology
-PT_JYZA0PNV	C95571	chr11	108315911	108315911	G	A	0	germline	missense_variant&splice_region_variant	ATM	Low-grade glioma	Low-grade astrocytic tumor
-PT_BQFM8NH0	C2722113	chr11	44171609	44171609	A	G	-2	germline	splice_acceptor_variant	EXT2	Non-neoplastic tumor	Benign tumor
+PT_40HTPY49	C99753	chr17	31201036	31201036	G	A	-1	somatic	splice_acceptor_variant	NF1	DIPG or DMG	Diffuse astrocytic and oligodendroglial tumor
+PT_TF84B5J9	C3533913	chr1	240801514	240801514	G	A	-6	somatic	splice_region_variant,intron_variant,splice_polypyrimidine_tract_variant	RGS7	Oligodendroglioma	Diffuse astrocytic and oligodendroglial tumor
+PT_RDWE18AC	C4114473	chr12	6951966	6951966	C	T	-17	somatic	intron_variant,splice_polypyrimidine_tract_variant	PTPN6	Other high-grade glioma	Diffuse astrocytic and oligodendroglial tumor
+PT_4347ZBEX	C216603	chr11	108272506	108272506	A	G	-26	somatic	intron_variant	ATM	Other high-grade glioma	Diffuse astrocytic and oligodendroglial tumor
