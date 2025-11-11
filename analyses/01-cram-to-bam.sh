@@ -30,17 +30,19 @@ fi
 
 ## Download genome reference
 URL="https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz"
-ref_genome="../data/hg38.fa.gz"
+ref_genome="../data/hg38.fa"
 
 if [ -f "$ref_genome" ]; then
   echo "Using reference genome: $ref_genome"
 else
   echo "Downloading reference genome..."
-  curl -L -o "$FILE" "$URL"
+  curl -L -o "$ref_genome.gz" "$URL"
   
   # Verify download succeeded
   if [ $? -eq 0 ]; then
-    echo "Download complete: $FILE"
+    gunzip $ref_genome.gz
+    samtools faidx $ref_genome
+    echo "Download complete: $ref_genome"
   else
     echo "Download failed."
     exit 1
@@ -74,8 +76,8 @@ while read line; do
     prefix=$(basename "$cram" .Aligned.out.sorted.cram)
     
     echo "Converting $cram_path"
-    bam_path="results/bams/${prefix}-${KF_id}-${gene}-${coordinates}.bam"
-    # input_path="variants/${prefix}-${KF_id}-${gene}-${coordinates}.tsv"
+    bam_path="results/bams/${prefix}-${KF_id}-${label}-${coordinates}.bam"
+    # input_path="variants/${prefix}-${KF_id}-${label}-${coordinates}.tsv"
       
     samtools view \
       -T $ref_genome \
