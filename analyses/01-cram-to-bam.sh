@@ -1,23 +1,50 @@
 #!/bin/bash
 
-## Set up input file
-variants="input/input.tsv"
-window=10000
+## Define default variables
+kf_id_col=1   # KF patient ID column
+chr_col=3     # Chromosome
+pos_col=4     # Position
+label_col=11  # Additional label to add to plot for identification, i.e. gene
+window=10000  # Bases to plot either side of the position given
 
+## Set up input files
+while getopts i:m:k:c:p:l: opt; do
+  case "${opt}" in
+    i) input_file=${OPTARG};; # header is expected
+    m) manifest=${OPTARG};;
+    k) kf_id_col=${OPTARG};;
+    c) chr_col=${OPTARG};;
+    p) pos_col=${OPTARG};;
+    l) label_col=${OPTARG};;
+    w) window=${OPTARG};;
+  esac
+done
+
+if [[ -z "$input_file" ]]; then
+  echo "Error: Input file (-i) is required."
+fi
+
+if [[ -z "$manifest" ]]; then
+  echo "Error: Manifest (-m) is required."
+fi
+
+####################################################
+
+# Loop through variant file
 while read line; do
-  KF_id=$(echo "$line" | cut -f 1)
-  chr=$(echo "$line" | cut -f 3)
-  coord_pos=$(echo "$line" | cut -f 4)
-  gene=$(echo "$line" | cut -f 11)
+  KF_id=$(echo "$line" | cut -f $kf_id_col)
+  chr=$(echo "$line" | cut -f $chr_col)
+  coord_pos=$(echo "$line" | cut -f $pos_col)
+  label=$(echo "$line" | cut -f $label_col)
   
-  prefix="$KF_id-$gene-$chr-$coord_pos"
+  prefix="$KF_id-$label-$chr-$coord_pos"
   echo "Processing $prefix"
   
   ## TODO: Get window from splice event
   coordinates=$chr":"$(($coord_pos - $window))"-"$(($coord_pos + $window))
     
   ## get file id
-  crams=$(grep "$KF_id" input/manifest.tsv | grep "Aligned.out.sorted.cram" | grep -v "crai" | cut -f2)
+  crams=$(grep "$KF_id" $manifest | grep "Aligned.out.sorted.cram" | grep -v "crai" | cut -f2)
     
   ## loop through each CRAM per patient
   ## TODO: Make select from BS_ID an option?
@@ -41,4 +68,4 @@ while read line; do
     samtools index "$bam_path"
     
   done
-done < <(tail -n +2 $variants)
+done < <(tail -n +2 $input_file)
