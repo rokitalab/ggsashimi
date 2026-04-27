@@ -8,7 +8,7 @@ From an EC2 instance:
 
 1. Clone the repository:
 ```
-git clone git@github.com:rokitalab/splicing-variants.git
+git clone git@github.com:rokitalab/ggsashimi-fork.git
 ```
 
 2. Pull Docker container:
@@ -33,10 +33,10 @@ API endpoint [None]: `https://cavatica-api.sbgenomics.com/v2`
 Authentication token [None]: (personal CAVATICA authentication token)
 NOTE: these parameters will automatically be assigned as the “default” profile in the configuration file.
 
-5. Mount a cavatica project to the data directory:
-```
-mkdir data/cavativa
-sbfs mount --profile default --project sicklera/pbta-and-normal-crams data/cavatica
-```
+5. Run ggsashimi
 
-To unmount, run `sbfs unmount <mount_dir>`
+Generate a sashimi plot, for example:
+
+```
+bash run_ggsashimi.sh --sample_file examples/samples.txt --coord_file examples/regions.txt
+```
