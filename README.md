@@ -33,9 +33,15 @@ API endpoint [None]: `https://cavatica-api.sbgenomics.com/v2`
 Authentication token [None]: (personal CAVATICA authentication token)
 NOTE: these parameters will automatically be assigned as the “default” profile in the configuration file.
 
-5. Run ggsashimi
+5. Download reference files
 
-Generate a sashimi plot, for example:
+```
+bash download_data.sh
+```
+
+6. Run ggsashimi
+
+Generate sashimi plots; for example:
 
 ```
 bash run_ggsashimi.sh --sample_file examples/samples.txt --coord_file examples/regions.txt
