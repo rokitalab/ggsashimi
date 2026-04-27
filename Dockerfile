@@ -2,6 +2,10 @@ FROM rocker/tidyverse:3.6.3
 LABEL maintainer="psullivan@childrensnational.org"
 WORKDIR /rocker-build/
 
+# Rewrite Debian package sources to use the Debian archive# (needed for end‑of‑life Debian releases like buster)
+# - Replace active mirrors with archive.debian.org
+# - Remove buster-updates (no longer available)
+# - Disable "Valid-Until" checks to allow archived metadata
 RUN sed -i 's|deb.debian.org|archive.debian.org|g' /etc/apt/sources.list \
  && sed -i 's|security.debian.org|archive.debian.org|g' /etc/apt/sources.list \
  && sed -i '/buster-updates/d' /etc/apt/sources.list \
@@ -9,11 +13,14 @@ RUN sed -i 's|deb.debian.org|archive.debian.org|g' /etc/apt/sources.list \
 
 
 # update and upgrade packages
+# clean up unused packages to reduce image size
 RUN apt-get -y update --fix-missing \
     && apt-get -y upgrade \
     && apt-get -y update \
     && apt-get -y autoremove
 
+# Install core system utilities, development libraries,
+# Python, Java, compression libraries, and common tools
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
          ca-certificates \
@@ -40,10 +47,12 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# install CAVATICA SBFS
+# Install CAVATICA / Seven Bridges Filesystem (SBFS)
+# Downloads install script and executes it
 RUN curl https://igor.sbgenomics.com/downloads/sbfs/install.sh -sSf | sudo sh
 
-# Install system libs required by R packages
+# Install system libraries required to compile R packages,
+# especially support
 RUN apt-get update && apt-get install -y \
     build-essential \
     libxml2-dev \
@@ -57,11 +66,14 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Clean site library
+# Remove all preinstalled R packages from the site library
+# Ensures a clean, reproducible R environment
 RUN rm -rf /usr/local/lib/R/site-library/*
 
+# Set a fixed CRAN snapshot for reproducible R package installs
 RUN echo "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/2020-04-01'))" >> /usr/local/lib/R/etc/Rprofile.site
 
+# Install CRAN R packages with dependencies
 RUN R -e "install.packages(c( \
   'BiocManager', \
   'data.table', \
@@ -81,6 +93,7 @@ RUN R -e "install.packages(c( \
   'vctrs' \
 ), dependencies=TRUE, verbose=TRUE)"
 
+# Install Bioconductor packages
 RUN R -e 'BiocManager::install(c( \
   "AnnotationHub", \
   "biomaRt", \
@@ -92,16 +105,13 @@ RUN R -e 'BiocManager::install(c( \
   "rtracklayer" \
 ))'
 
-RUN R -e "library(ggplot2); library(withr); library(gridExtra); library(openxlsx); library(optparse)"
-
+# Upgrade Python package build tooling
 RUN python3 -m pip install --upgrade pip setuptools wheel
 
-# Install pysam
+# Install pysam (Python bindings for samtools/htslib)
 RUN python3 -m pip install --no-cache-dir pysam
 
-RUN python3 -c "import pysam; print(pysam.__version__)"
-
-# install needed tools
+# Install runtime numeric libraries and locale support
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libblas3 \
@@ -128,7 +138,7 @@ RUN apt-get update && apt-get -y upgrade && \
         apt-get clean && apt-get purge && \
         rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-WORKDIR /usr/src
+WORKDIR /home/rstudio/
 
 #Samtools
 RUN wget https://github.com/samtools/samtools/releases/download/1.21/samtools-1.21.tar.bz2 && \
@@ -138,10 +148,5 @@ RUN wget https://github.com/samtools/samtools/releases/download/1.21/samtools-1.
         ./configure --prefix $(pwd) && \
         make
 
-ENV PATH=${PATH}:/usr/src/samtools-1.21
+ENV PATH=${PATH}:/home/rstudio/samtools-1.21
 
-# Copy ggsashimi in the docker image
-# ADD ggsashimi.py /
-
-# Run the container as an executable
-# ENTRYPOINT ["/ggsashimi.py"]
