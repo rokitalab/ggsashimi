@@ -41,7 +41,7 @@ bash download_data.sh
 
 6. Run ggsashimi
 
-Generate sashimi plots; for example:
+Generate sashimi plots inside the docker container; for example:
 
 ```
 bash run_ggsashimi.sh --sample_file examples/samples.txt --coord_file examples/regions.txt
