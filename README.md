@@ -1,6 +1,6 @@
 # ggsashimi
 
-Command-line tool for the visualization of splicing events across multiple samples, adapted for use with rokita-lab and mounting cavatica project bams on an EC2 instance.
+Command-line tool for the visualization of splicing events across multiple samples, adapted for use with rokita-lab and mounting cavatica project bams on an EC2 instance. Utilizes a modified `ggsashimi.py` python script from guigolab/ggsashimi for plot generation. 
 
 ## Installation<a name="installation"></a>
 
@@ -8,7 +8,7 @@ From an EC2 instance:
 
 1. Clone the repository:
 ```
-git clone git@github.com:rokitalab/ggsashimi-fork.git
+git clone git@github.com:rokitalab/ggsashimi.git
 ```
 
 2. Pull Docker container:
@@ -33,7 +33,7 @@ API endpoint [None]: `https://cavatica-api.sbgenomics.com/v2`
 Authentication token [None]: (personal CAVATICA authentication token)
 NOTE: these parameters will automatically be assigned as the “default” profile in the configuration file.
 
-5. Download reference files
+5. Download reference files (GRCh38 genome fasta and GENCODE v39 GTF)
 
 ```
 bash download_data.sh
@@ -56,7 +56,7 @@ bash run_ggsashimi.sh --sample_file examples/samples.txt --coord_file examples/r
 1. `sample_name`: name to be used in bam mapping file
 2. `cavatica_project`: project to mount and pull cram files
 3. `cram_name`: name of sample cram file to be pulled from cavatica project
-4.	`group`: sashimi plot group label
+4. `group`: sashimi plot group label
 
 see `examples/samples.txt` for formatting:
 
@@ -83,4 +83,8 @@ see `examples/regions.txt` for formatting:
 | chr1:151324500-151327600  | PI4KB |
 | chr7:108234500-108240250  | NRCAM |
 | chr22:20993000-20997000   | LZTR1 |
+
+Other optional arguments:
+
+* `--min_coverage`: Minimum number of reads supporting a junction to be drawn [default=10]
 
