@@ -179,7 +179,7 @@ echo "echo 'generating sashimi plot...'" >> "$output_script"
 
 echo 'python3 scripts/ggsashimi.py -b tmp/bammap_$out.tsv \
     -c ${REGION} \
-    -g refs/gencode.v39.primary_assembly.annotation.gtf \
+    -g refs/gencode.v39.primary_assembly.annotation.gtf.gz \
     -M $min_coverage -C 3 -O 3 \
     --alpha 1 --shrink --fix-y-scale \
     --overlay 3 --aggr mean_j \
