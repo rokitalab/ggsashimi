@@ -1,0 +1,6 @@
+#E64B35FF
+#4DBBD5FF
+#008000
+orange
+cornflowerblue
+black
