@@ -8,7 +8,7 @@ cd refs
 GENCODE39="https://bti-openaccess-us-east-1-prd-references.s3.us-east-1.amazonaws.com/gencode.v39.primary_assembly.annotation.gtf.gz"
 
 echo "Downloading ${GENCODE39##*/}"
-curl -L $GENCODE39 > gencode.v39.primary_assembly.annotation.gtf
+curl -L $GENCODE39 > gencode.v39.primary_assembly.annotation.gtf.gz
 
 # Download GRCh38 fasta file
 REFERENCE="https://bti-openaccess-us-east-1-prd-references.s3.us-east-1.amazonaws.com/GRCh38.primary_assembly.genome.fa"
