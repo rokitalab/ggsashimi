@@ -8,7 +8,7 @@ From an EC2 instance:
 
 1. Clone the repository:
 ```
-git clone git@github.com:rokitalab/splicing-variants.git
+git clone git@github.com:rokitalab/ggsashimi-fork.git
 ```
 
 2. Pull Docker container:
@@ -37,4 +37,12 @@ NOTE: these parameters will automatically be assigned as the “default” profi
 
 ```
 bash download_data.sh
+```
+
+6. Run ggsashimi
+
+Generate sashimi plots; for example:
+
+```
+bash run_ggsashimi.sh --sample_file examples/samples.txt --coord_file examples/regions.txt
 ```
