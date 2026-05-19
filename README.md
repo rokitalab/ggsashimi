@@ -33,10 +33,8 @@ API endpoint [None]: `https://cavatica-api.sbgenomics.com/v2`
 Authentication token [None]: (personal CAVATICA authentication token)
 NOTE: these parameters will automatically be assigned as the “default” profile in the configuration file.
 
-5. Mount a cavatica project to the data directory:
-```
-mkdir data/cavativa
-sbfs mount --profile default --project sicklera/pbta-and-normal-crams data/cavatica
-```
+5. Download reference files
 
-To unmount, run `sbfs unmount <mount_dir>`
+```
+bash download_data.sh
+```

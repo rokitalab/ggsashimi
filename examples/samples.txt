@@ -1,0 +1,16 @@
+sample_name	cavatica_project	cram_name	group
+GTEx-cerebellum-1	sicklera/pbta-and-normal-crams	b7bccab5-2f6f-48bd-b9c1-54a27be86ebd.Aligned.out.sorted.cram	GTEx - Cerebellum
+GTEx-cerebellum-2	sicklera/pbta-and-normal-crams	041b942c-4fc7-4a3c-aa56-64c53b0da2d9.Aligned.out.sorted.cram	GTEx - Cerebellum
+GTEx-cerebellum-3	sicklera/pbta-and-normal-crams	0c8fa6dc-e43d-45e8-a23a-cc015377a48d.Aligned.out.sorted.cram	GTEx - Cerebellum
+GTEx-cerebellum-4	sicklera/pbta-and-normal-crams	e0cfb447-c25d-45fe-984b-7faadacd62c4.Aligned.out.sorted.cram	GTEx - Cerebellum
+GTEx-cerebellum-5	sicklera/pbta-and-normal-crams	ba49561a-7b9d-43db-a61a-1ddbe7fb46a9.Aligned.out.sorted.cram	GTEx - Cerebellum
+GTEx-skin-1	sicklera/pbta-and-normal-crams	9e00d670-eb1a-4d43-8f8c-2eb10cba020a.Aligned.out.sorted.cram	GTEx - Skin
+GTEx-skin-2	sicklera/pbta-and-normal-crams	d83776bb-ac69-43d0-825d-e56db280888d.Aligned.out.sorted.cram	GTEx - Skin
+GTEx-skin-3	sicklera/pbta-and-normal-crams	96da043f-3d4d-4d51-b437-d4f8e0196651.Aligned.out.sorted.cram	GTEx - Skin
+GTEx-skin-4	sicklera/pbta-and-normal-crams	3b8fa35d-9796-4e7e-bcd5-28c8a2c7f58d.Aligned.out.sorted.cram	GTEx - Skin
+GTEx-skin-5	sicklera/pbta-and-normal-crams	e420a6a4-0d6c-464c-aaf3-e97194f63eaf.Aligned.out.sorted.cram	GTEx - Skin
+GTEx-testis-1	sicklera/pbta-and-normal-crams	aa473c90-cd79-41b2-a72d-d4b4de27d7b8.Aligned.out.sorted.cram	GTEx - Testis
+GTEx-testis-2	sicklera/pbta-and-normal-crams	8297f79b-ed25-4897-9201-3e67d732fb0c.Aligned.out.sorted.cram	GTEx - Testis
+GTEx-testis-3	sicklera/pbta-and-normal-crams	25ac375a-d075-41d9-8696-9c539d1617d4.Aligned.out.sorted.cram	GTEx - Testis
+GTEx-testis-4	sicklera/pbta-and-normal-crams	32f40f41-1a42-4ab9-a26e-12f5659e069b.Aligned.out.sorted.cram	GTEx - Testis
+GTEx-testis-5	sicklera/pbta-and-normal-crams	21decccb-885e-48cd-81d9-123150d24790.Aligned.out.sorted.cram	GTEx - Testis
