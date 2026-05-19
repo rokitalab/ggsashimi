@@ -4,6 +4,7 @@ set -e
 set -o pipefail
 
 # Download gencode v39 GTF
+mkdir -p refs
 cd refs
 GENCODE39="https://bti-openaccess-us-east-1-prd-references.s3.us-east-1.amazonaws.com/gencode.v39.primary_assembly.annotation.gtf.gz"
 
