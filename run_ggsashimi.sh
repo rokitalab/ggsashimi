@@ -152,8 +152,34 @@ echo 'min_coverage=$3' >> "$output_script"
 echo "" >> "$output_script"
 echo "" >> "$output_script"
 
+# add function to expand regions when necessary
+echo 'expand_region() {
+    local region=$1
+    local pad=$2
+    
+    local chrom coords start end new_start new_end
+  
+    chrom=$(echo "$region" | cut -d":" -f1)
+    coords=$(echo "$region" | cut -d":" -f2)
+  
+    start=$(echo "$coords" | cut -d"-" -f1)
+    end=$(echo "$coords"   | cut -d"-" -f2)
+  
+    new_start=$((start - pad))
+    new_end=$((end + pad))
+  
+    # prevent negative coordinates
+    if (( new_start < 1 )); then
+      new_start=1
+    fi
+  
+    echo "${chrom}:${new_start}-${new_end}"
+  } ' >> $output_script
+
 # LOOP THROUGH TSV AND ADD SAMTOOLS COMMANDS
 echo "echo 'generating subsetted bams...'" >> "$output_script"
+
+echo 'bam_region=$(expand_region "$REGION" 100000)' >> $output_script
 
 awk -F'\t' '
 NR==1 {
@@ -164,7 +190,7 @@ NR==1 {
     next
 }
 {
-    print "samtools view -T refs/GRCh38.primary_assembly.genome.fa -b $cavatica_dir/"$c" ${REGION} -o tmp/bams/"$s"_$out.bam"
+    print "samtools view -T refs/GRCh38.primary_assembly.genome.fa -b $cavatica_dir/"$c" ${bam_region} -o tmp/bams/"$s"_$out.bam"
     print "samtools index tmp/bams/"$s"_$out.bam"
     print ""
 }
@@ -177,41 +203,84 @@ echo "" >> "$output_script"
 
 echo "echo 'generating sashimi plot...'" >> "$output_script"
 
-echo 'python3 scripts/ggsashimi.py -b tmp/bammap_$out.tsv \
-    -c ${REGION} \
-    -g refs/gencode.v39.primary_assembly.annotation.gtf.gz \
-    -M $min_coverage -C 3 -O 3 \
-    --alpha 1 --shrink --fix-y-scale \
-    --overlay 3 --aggr mean_j \
-    --base-size=14 \
-    -R 350 --height=1.4 --width=7 \
-    --ann-height 3 \
-    -P examples/palette.txt \
-    -o "output/sashimi_$out.pdf"' >> "$output_script"
+echo 'attempt_plot () {
+    local region=$1
+  
+    python3 scripts/ggsashimi.py -b tmp/bammap_$out.tsv \
+        -c ${region} \
+        -g refs/gencode.v39.primary_assembly.annotation.gtf.gz \
+        -M $min_coverage -C 3 -O 3 \
+        --alpha 1 --shrink --fix-y-scale \
+        --overlay 3 --aggr mean_j \
+        --base-size=14 \
+        -R 350 --height=1 --width=6.5 \
+        --ann-height 3 \
+        -P examples/palette.txt \
+        -o "output/sashimi_$out.pdf"
+  
+    return $?
+  } ' >> $output_script
 
+echo 'echo "generating sashimi plot..."' >> $output_script
+
+echo "pad_sizes=(0 1000 2000 5000 10000 25000 50000 100000)" >> $output_script
+
+echo "success=0" >> $output_script
+
+echo 'for pad in "${pad_sizes[@]}"; do
+    if [[ $pad -eq 0 ]]; then
+      test_region="$REGION"
+      echo "Trying original region: $test_region"
+    else
+      test_region=$(expand_region "$REGION" "$pad")
+      echo "Retry with expanded region (+$pad): $test_region"
+    fi
+  
+    if attempt_plot "$test_region"; then
+      echo "✅ Success with region: $test_region"
+      success=1
+      break
+    else
+      echo "❌ Failed for region: $test_region"
+    fi
+  done' >> $output_script
+
+echo 'if [[ $success -ne 1 ]]; then
+    echo "⚠️ All attempts failed for $out" >&2
+    exit 1
+  fi' >> $output_script
+    
 chmod +x "$output_script"
 
 echo "✅ Generated: $output_script"
 
 ############################################
-# LOOP THROUGH REGIONS AND RUN PLOT SCRIPT
+# Run plot scripts in parallel
 ############################################
 
 # Create tmp/bams dir if it does not already exist
 mkdir -p tmp/bams
 mkdir -p output
 
-# loop through coord file rows to run ggsashimi plotting script
-while read -r region name || [[ -n "$region" ]]; do
+pids=()
 
-  echo "Processing $name region..."
-  
-  region=${region//$'\r'/}  
+while IFS=$'\t' read -r region name; do
+  region=${region//$'\r'/}
   name=${name//$'\r'/}
 
-  bash $output_script "$region" "$name" $min_coverage; 
+  bash "$output_script" "$region" "$name" "$min_coverage" &
 
+  pids+=($!)
+
+  # limit concurrency
+  if (( ${#pids[@]} >= 4 )); then
+    wait -n
+  fi
 done < <(tail -n +2 "$coord_file")
+
+wait
+
+echo "All jobs complete ✅"
 
 # unmount cavatica project
 sbfs unmount cavatica
@@ -219,5 +288,3 @@ sbfs unmount cavatica
 # rm tmp files, plot_ggsashimi.sh script
 rm -R tmp/*
 rm plot_ggsashimi.sh
-
-echo "sashimi plots generated ✅ "
