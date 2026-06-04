@@ -492,7 +492,7 @@ def setup_R_script(h, w, b, label_dict):
         width = %(w)s
         theme_set(theme_bw(base_size=base_size))
         theme_update(
-                plot.margin = unit(c(0,2,0,2), "pt"),
+                plot.margin = unit(c(2,4,0,4), "pt"),
                 panel.grid = element_blank(),
                 panel.border = element_blank(),
                 axis.line = element_line(size=0.5),
