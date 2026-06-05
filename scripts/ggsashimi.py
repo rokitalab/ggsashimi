@@ -93,6 +93,12 @@ def define_options():
                 help="Output file format: <pdf> <svg> <png> <jpeg> <tiff> [default=%(default)s]")
         parser.add_argument("-R", "--out-resolution", type=int, default=300, dest="out_resolution",
                 help="Output file resolution in PPI (pixels per inch). Applies only to raster output formats [default=%(default)s]")
+        parser.add_argument("-H", "--highlight-junctions", type=str, dest="highlight_junctions", default="",
+                help="""File with junctions to highlight with custom colors. TSV format (no header):
+                col1: junction start (0-based, matches junction BED output),
+                col2: junction end,
+                col3: color (R color name or hex value).
+                Example line: 142352765\t142353238\tred""")
         parser.add_argument("--debug-info", action=DebugInfoAction,
                 help="Show several system information useful for debugging purposes [default=%(default)s]")
         parser.add_argument('--version', action='version', version=get_version())
@@ -310,6 +316,19 @@ def read_palette(f):
         return palette
 
 
+def read_highlight_junctions(f):
+        highlights = {}
+        if f:
+                with open(f) as openf:
+                        for line in openf:
+                                line = line.strip()
+                                if not line or line.startswith('#'):
+                                        continue
+                                parts = line.split('\t')
+                                highlights[(int(parts[0]), int(parts[1]))] = parts[2]
+        return highlights
+
+
 def read_gtf(f, c):
         exons = OrderedDict()
         transcripts = OrderedDict()
@@ -523,7 +542,7 @@ def mean(lst):
         return sum(lst)/len(lst)
 
 
-def make_R_lists(id_list, d, overlay_dict, aggr, intersected_introns):
+def make_R_lists(id_list, d, overlay_dict, aggr, intersected_introns, highlight_junctions=None):
         s = ""
         aggr_f = {
                 "mean": mean,
@@ -532,22 +551,35 @@ def make_R_lists(id_list, d, overlay_dict, aggr, intersected_introns):
         id_list = id_list if not overlay_dict else overlay_dict.keys()
         # Iterate over ids to get bam signal and junctions
         shrinked_introns = dict()
+        highlight_r_entries = {}  # (plot_don, plot_acc) -> color, using post-shrink coords
         for k in id_list:
                 shrinked_introns_k, shrinked_intronsid = dict(), dict()
                 x, y, dons, accs, yd, ya, counts = [], [], [], [], [], [], []
                 if not overlay_dict:
                         x, y, dons, accs, yd, ya, counts = d[k]
+                        orig_pairs = list(zip(dons, accs))
                         if intersected_introns:
                                 x, y = shrink_density(x, y, intersected_introns)
                                 shrinked_introns_k, dons, accs = shrink_junctions(dons, accs, intersected_introns)
                                 shrinked_introns.update(shrinked_introns_k)
+                        if highlight_junctions:
+                                for (orig_don, orig_acc), (plot_don, plot_acc) in zip(orig_pairs, zip(dons, accs)):
+                                        color = highlight_junctions.get((orig_don, orig_acc), "")
+                                        if color:
+                                                highlight_r_entries[(plot_don, plot_acc)] = color
                 else:
                         for id in overlay_dict[k]:
                                 xid, yid, donsid, accsid, ydid, yaid, countsid = d[id]
+                                orig_pairs_id = list(zip(donsid, accsid))
                                 if intersected_introns:
                                         xid, yid = shrink_density(xid, yid, intersected_introns)
                                         shrinked_intronsid, donsid, accsid = shrink_junctions(donsid, accsid, intersected_introns)
                                         shrinked_introns.update(shrinked_intronsid)
+                                if highlight_junctions:
+                                        for (orig_don, orig_acc), (plot_don, plot_acc) in zip(orig_pairs_id, zip(donsid, accsid)):
+                                                color = highlight_junctions.get((orig_don, orig_acc), "")
+                                                if color:
+                                                        highlight_r_entries[(plot_don, plot_acc)] = color
                                 x += xid
                                 y += yid
                                 dons += donsid
@@ -574,6 +606,9 @@ def make_R_lists(id_list, d, overlay_dict, aggr, intersected_introns):
                         'ya' : ",".join(map(str, ya)),
                         'counts' : ",".join(map(str, counts))
                 })
+        if highlight_r_entries:
+                items = ", ".join('"{}_{}"="{}"'.format(don, acc, col) for (don, acc), col in highlight_r_entries.items())
+                s += "\nhighlight_list = list({})\n".format(items)
         if intersected_introns:
                 s+= """
                 coord_dict = data.frame(shrinked=c(%(shrinked_introns_keys)s), real=c(%(shrinked_introns_values)s))
@@ -666,6 +701,7 @@ if __name__ == "__main__":
                 exit(1)
 
         palette = read_palette(args.palette)
+        highlight_junctions = read_highlight_junctions(args.highlight_junctions)
 
         bam_dict, overlay_dict, color_dict, id_list, label_dict = {"+":OrderedDict()}, OrderedDict(), OrderedDict(), [], OrderedDict()
         if args.strand != "NONE": bam_dict["-"] = OrderedDict()
@@ -768,7 +804,7 @@ if __name__ == "__main__":
                                 x, _ = shrink_density(x, x, intersected_introns)
                         R_script += gtf_for_ggplot(annotation, x[0], x[-1], arrow_bins)
 
-                R_script += make_R_lists(id_list, bam_dict[strand], overlay_dict, args.aggr, intersected_introns)
+                R_script += make_R_lists(id_list, bam_dict[strand], overlay_dict, args.aggr, intersected_introns, highlight_junctions)
 
                 R_script += """
 
@@ -930,7 +966,14 @@ if __name__ == "__main__":
                                 # Thickness of the arch
                                 lwd = scale_lwd(j[5]/j_tot_counts)
 
-                                curve_par = gpar(lwd=lwd, col=color_list[[id]])
+                                arc_col = color_list[[id]]
+                                label_fill = "white"
+                                j_key = paste(j[1], j[2], sep="_")
+                                if (exists('highlight_list') && j_key %%in%% names(highlight_list)) {
+                                        arc_col = highlight_list[[j_key]]
+                                        label_fill = highlight_list[[j_key]]
+                                }
+                                curve_par = gpar(lwd=lwd, col=arc_col)
 
                                 # Arc grobs
 
@@ -960,7 +1003,7 @@ if __name__ == "__main__":
                                 # Add junction labels
                                 gp = gp + annotate("label", x = xmid, y = ymid, label = as.character(junctions[i,6]),
                                         vjust=0.5, hjust=0.5, label.padding=unit(0.01, "lines"),
-                                        label.size=NA, size=(base_size*0.352777778)*0.6
+                                        label.size=NA, size=(base_size*0.352777778)*0.6, fill=label_fill
                                 )
 
 
